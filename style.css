@@ -519,3 +519,17 @@ input[type="checkbox"] { width: 20px; height: 20px; margin-right: 8px; cursor: p
     border: 2px solid #333; /* 선택된 색 테두리 */
     transform: scale(1.1);
 }
+
+/* 🔒 지난 날짜 잠금 스타일 */
+.date-locked {
+    background-color: #f2f2f2 !important; /* 회색 배경 */
+    color: #bbb !important;               /* 글자도 흐릿하게 */
+    pointer-events: none;                 /* ★핵심: 클릭 아예 불가능하게 막음 */
+    opacity: 0.7;
+}
+
+/* 잠긴 날짜 안에 있는 근무자 이름도 흐릿하게 */
+.date-locked .schedule-bar {
+    opacity: 0.5;
+    background-color: #999 !important; /* 색상 흑백처리 (선택사항) */
+}
