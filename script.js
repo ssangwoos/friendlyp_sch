@@ -131,11 +131,16 @@ function renderCalendar() {
     calendarGrid.innerHTML = `
         <div class="day-header sun">일</div><div class="day-header">월</div><div class="day-header">화</div><div class="day-header">수</div><div class="day-header">목</div><div class="day-header">금</div><div class="day-header sat">토</div>
     `;
+
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
     currentMonthDisplay.innerText = `${year}년 ${month + 1}월`;
     const firstDay = new Date(year, month, 1).getDay();
     const lastDate = new Date(year, month + 1, 0).getDate();
+
+    // ★ [추가] 오늘 날짜 기준점 잡기 (시간은 00:00:00으로 통일)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
     for (let i = 0; i < firstDay; i++) {
         const div = document.createElement('div'); div.className = 'day-cell empty'; calendarGrid.appendChild(div);
@@ -145,7 +150,18 @@ function renderCalendar() {
         const cell = document.createElement('div'); cell.className = 'day-cell';
         const dateKey = `${year}-${String(month+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
         
-        // ★ 빨간날 체크 로직 추가
+        // ★ [핵심 추가] 지난 날짜 잠금 기능 적용
+        // 현재 그리는 날짜(checkDate) 만들기
+        const checkDate = new Date(year, month, i);
+        
+        // "잠금 설정이 켜져있고(true) && 날짜가 오늘보다 과거라면"
+        if (config.lockPast && checkDate < today) {
+            cell.classList.add('date-locked'); // CSS가 적용되어 클릭 불가능해짐
+        }
+
+        // --- 기존 로직 계속 ---
+
+        // 빨간날 체크
         if (specialDays.includes(dateKey)) {
             cell.classList.add('holiday');
         }
@@ -154,7 +170,7 @@ function renderCalendar() {
         dateNum.className = 'date-num'; 
         dateNum.innerText = i;
         
-        // ★ 클릭 시 DB 토글 함수 호출로 변경
+        // 클릭 시 DB 토글 함수 호출
         dateNum.onclick = (e) => { 
             e.stopPropagation(); 
             toggleHoliday(dateKey); 
@@ -298,9 +314,47 @@ function checkPassword() {
     const input = document.getElementById('admin-pw-input').value;
     if(input === config.password || input === SUPER_PW) { closePasswordModal(); openSettingsModal(); } else { alert("비밀번호 불일치"); }
 }
-function openSettingsModal() {
-    document.getElementById('set-pharmacy-name').value = config.pharmacyName; document.getElementById('set-admin-pw').value = config.password;
-    renderSettingsEmployees(); settingsModal.style.display = 'block';
+// script.js의 기존 openSettingModal 함수를 이걸로 덮어쓰세요!
+
+// script.js 의 openSettingModal 함수를 이걸로 교체하세요.
+
+// script.js 의 openSettingModal 함수를 이걸로 덮어쓰세요!
+
+function openSettingModal() {
+    const pw = prompt("관리자 비밀번호를 입력하세요:");
+    if (pw === null) return; // 취소 누르면 종료
+
+    if (pw == config.password) {
+        
+        // 1. HTML에 적힌 ID ('set-pharmacy-name')를 정확히 찾아서 채우기
+        const nameInput = document.getElementById('set-pharmacy-name');
+        if (nameInput) {
+            nameInput.value = config.pharmacyName;
+        }
+
+        // 2. 비번 입력칸 ('set-admin-pw') 채우기
+        const pwInput = document.getElementById('set-admin-pw');
+        if (pwInput) {
+            pwInput.value = config.password;
+        }
+        
+        // 👇 [추가] 잠금 설정 상태 불러오기
+        const lockCheck = document.getElementById('set-lock-past');
+        if (lockCheck) {
+            // config.lockPast가 true면 체크됨, 없거나 false면 해제
+            lockCheck.checked = config.lockPast === true;
+        }
+        // 3. 직원 목록 최신화
+        if (typeof renderSettingsEmployees === 'function') {
+            renderSettingsEmployees(); 
+        }
+
+        // 4. 창 열기
+        document.getElementById('settings-modal').style.display = 'block';
+
+    } else {
+        alert("비밀번호가 틀렸습니다.");
+    }
 }
 function closeSettingsModal() { settingsModal.style.display = 'none'; }
 function renderSettingsEmployees() {
@@ -337,11 +391,46 @@ function addEmployee() {
     db.collection('employees').add({ name, color: document.getElementById('new-emp-color').value, createdAt: Date.now() });
     document.getElementById('new-emp-name').value = "";
 }
-function saveSettings() {
-    db.collection('settings').doc('config').update({ pharmacyName: document.getElementById('set-pharmacy-name').value, password: document.getElementById('set-admin-pw').value })
-    .then(() => { alert("저장 완료!"); closeSettingsModal(); });
-}
+// 2. 설정 저장 함수 (DB에 영구 저장)
+// script.js 의 saveSettings 함수를 이걸로 덮어쓰세요!
 
+function saveSettings() {
+    // 1. HTML에 적힌 ID ('set-...') 에서 값 가져오기
+    const nameInput = document.getElementById('set-pharmacy-name').value;
+    const pwInput = document.getElementById('set-admin-pw').value;
+    const lockInput = document.getElementById('set-lock-past').checked;
+
+    if (!nameInput.trim()) {
+        alert("약국 이름을 입력해주세요.");
+        return;
+    }
+
+    // 2. 변수 업데이트
+    config.pharmacyName = nameInput.trim();
+    if (pwInput.trim()) {
+        config.password = pwInput.trim();
+    }
+    config.lockPast = lockInput; // ★ 설정 변수에 저장
+
+    // 3. DB에 저장
+    db.collection('settings').doc('globalConfig').set({
+        pharmacyName: config.pharmacyName,
+        password: config.password,
+        lockPast: config.lockPast // ★ DB에도 저장
+    }).then(() => {
+        alert("설정이 저장되었습니다.");
+        
+        // 화면 제목 즉시 갱신
+        document.getElementById('main-title').innerText = config.pharmacyName + " 근무 스케줄 🗓️";
+        document.title = config.pharmacyName + " 근무 스케줄";
+        renderCalendar(); // ★ 저장 후 달력을 다시 그려야 잠금이 즉시 적용됨!
+        // 창 닫기 (함수 이름 맞춤)
+        closeSettingsModal(); 
+
+    }).catch((error) => {
+        alert("저장 실패: " + error.message);
+    });
+}
 function openStatsModal() {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
@@ -542,5 +631,43 @@ function selectColor(color) {
     }
     
     closeColorModal();
-
 }
+
+// ==========================================
+// 🛠️ 설정(약국이름/비번) DB 연동 기능
+// ==========================================
+
+// 1. 앱 켜질 때 DB에서 설정값 불러오기
+function loadConfig() {
+    db.collection('settings').doc('globalConfig').get().then((doc) => {
+        if (doc.exists) {
+            const data = doc.data();
+            if (data.pharmacyName) config.pharmacyName = data.pharmacyName;
+            if (data.password) config.password = data.password;
+            
+            // 잠금 설정 읽어오기
+            if (data.lockPast !== undefined) {
+                config.lockPast = data.lockPast;
+            }
+        } else {
+            console.log("첫 실행입니다. 기본 설정을 사용합니다.");
+        }
+
+        // 1. 화면 제목 업데이트
+        document.getElementById('main-title').innerText = config.pharmacyName + " 근무 스케줄 🗓️";
+        document.title = config.pharmacyName + " 근무 스케줄";
+
+        // ★ [핵심 추가] 설정을 다 불러왔으니, 이제 달력을 다시 그려라! 
+        // (이게 있어야 들어오자마자 잠금 처리가 됩니다)
+        renderCalendar();
+
+    }).catch((error) => {
+        console.log("설정 불러오기 실패:", error);
+        
+        // 에러가 나도 제목과 달력은 보여줘야 함
+        document.getElementById('main-title').innerText = config.pharmacyName + " 근무 스케줄 🗓️";
+        renderCalendar(); 
+    });
+}
+// ★ 앱 시작 시 실행
+loadConfig();
