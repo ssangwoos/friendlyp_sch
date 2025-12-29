@@ -17,7 +17,7 @@
 
     <header class="main-header">
         <h1 id="main-title">로딩중... 🗓️</h1>
-        <button class="btn-settings" onclick="openPasswordModal()">⚙️ 환경설정</button>
+        <button class="btn-settings" onclick="openSettingModal()">⚙️ 환경설정</button>
     </header>
 
     <div class="main-container">
@@ -146,6 +146,10 @@
                 <label>관리자 비밀번호 변경</label>
                 <input type="text" id="set-admin-pw" placeholder="변경할 비밀번호">
             </div>
+            <div class="form-group" style="margin-top: 15px; display: flex; align-items: center;">
+                <input type="checkbox" id="set-lock-past" style="width: 20px; height: 20px; margin-right: 10px;">
+                <label for="set-lock-past" style="margin: 0; cursor: pointer;">지난 날짜 수정 잠금 (체크 시 비활성화)</label>
+            </div>
             <hr style="margin: 20px 0;">
             <h3>직원 관리</h3>
             <div id="settings-emp-list" class="emp-manage-list"></div>
@@ -173,6 +177,6 @@
     </div>
     <script src="script.js"></script>
 </body>
-
 </html>
+
 
