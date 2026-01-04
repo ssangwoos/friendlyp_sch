@@ -304,19 +304,45 @@ input[type="checkbox"] { width: 20px; height: 20px; margin-right: 8px; cursor: p
 /* 버튼 그룹 */
 .btn-group { display: flex; gap: 10px; margin-top: 25px; }
 
+/* =========================================
+   💾 설정 저장 버튼 리뉴얼 (둥글고 세련되게)
+   ========================================= */
 .btn-save {
-    flex: 1;
-    padding: 15px;
-    background-color: var(--success-color);
+    /* 1. 크기와 배치 */
+    width: 100%;             /* 가로로 꽉 차게 */
+    padding: 16px 0;         /* 위아래 두툼하게 (터치감 향상) */
+    margin-top: 25px !important; /* 위쪽 목록과 확실히 띄우기 */
+    
+    /* 2. 색상과 배경 */
+    background-color: #4CAF50; /* 쨍하고 깔끔한 초록색 */
     color: white;
+    
+    /* 3. 모양 (핵심 포인트) */
     border: none;
-    border-radius: 6px;
+    border-radius: 12px;     /* ★ 모서리를 둥글게 깎음 (아이폰 스타일) */
+    
+    /* 4. 폰트 */
     font-size: 1.1rem;
     font-weight: bold;
     cursor: pointer;
+    
+    /* 5. 입체감 (그림자) */
+    box-shadow: 0 4px 10px rgba(76, 175, 80, 0.3); /* 아래에 은은한 그림자 */
+    transition: all 0.2s ease; /* 마우스 올렸을 때 부드럽게 변함 */
 }
-.btn-save:hover { background-color: #4cae4c; }
 
+/* 마우스 올렸을 때 효과 */
+.btn-save:hover {
+    background-color: #43A047;     /* 색깔이 살짝 진해짐 */
+    transform: translateY(-2px);   /* 버튼이 살짝 공중부양 */
+    box-shadow: 0 6px 15px rgba(76, 175, 80, 0.4); /* 그림자도 같이 뜸 */
+}
+
+/* 클릭했을 때 (누르는 느낌) */
+.btn-save:active {
+    transform: translateY(0);      /* 다시 제자리로 */
+    box-shadow: 0 2px 5px rgba(76, 175, 80, 0.2);
+}
 .btn-delete {
     width: 60px;
     background-color: var(--danger-color);
@@ -532,4 +558,136 @@ input[type="checkbox"] { width: 20px; height: 20px; margin-right: 8px; cursor: p
 .date-locked .schedule-bar {
     opacity: 0.5;
     background-color: #999 !important; /* 색상 흑백처리 (선택사항) */
+}
+
+/* =========================================
+   🛠️ 환경설정: 직원 관리 리스트 디자인 수정
+   ========================================= */
+
+/* 1. 직원 목록 박스 (스크롤 생기게) */
+#settings-emp-list {
+    max-height: 250px;         /* 높이 제한 */
+    overflow-y: auto;          /* 내용 많으면 스크롤 */
+    border: 1px solid #e0e0e0; /* 테두리 */
+    padding: 10px;
+    margin: 10px 0;
+    background-color: #fafafa;
+    border-radius: 8px;
+}
+
+/* 2. 직원 한 줄 (가로로 예쁘게 정렬) */
+.emp-row {
+    display: flex;             /* ★핵심: 가로 배치 */
+    align-items: center;       /* 위아래 중앙 정렬 */
+    padding: 8px 5px;
+    border-bottom: 1px solid #eee;
+    background: white;
+}
+
+/* 3. 색상 원 */
+.color-circle {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    margin-right: 10px;
+    border: 1px solid rgba(0,0,0,0.1);
+}
+
+/* 4. 직원 이름 */
+.emp-row span {
+    flex-grow: 1;              /* 남은 공간 꽉 채우기 */
+    font-size: 15px;
+    font-weight: 500;
+    color: #333;
+}
+
+/* 5. 삭제 버튼 (작고 빨갛게) */
+.btn-delete {
+    background-color: #ff5252; /* 예쁜 빨강 */
+    color: white;
+    border: none;
+    padding: 5px 12px;
+    border-radius: 20px;       /* 둥글게 */
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: bold;
+    transition: background 0.2s;
+}
+
+.btn-delete:hover {
+    background-color: #ff0000; /* 마우스 올리면 진해짐 */
+}
+
+/* 6. 새 직원 추가 입력칸 정렬 */
+.emp-add-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 15px;
+}
+
+.emp-add-row input[type="text"] {
+    flex-grow: 1; /* 입력창 길게 */
+}
+/* =========================================
+   🎨 색상 버튼 & 입력창 디자인 복구
+   ========================================= */
+
+/* 1. 전체 줄 맞춤 */
+.emp-row {
+    display: flex !important;
+    align-items: center;
+    padding: 8px 5px;
+    border-bottom: 1px solid #eee;
+    width: 100%;
+}
+
+/* 2. 색상 버튼 (못생긴 테두리 싹 없애고 원형으로) */
+.edit-color {
+    /* 브라우저 기본 스타일 강제 제거 */
+    -webkit-appearance: none;
+    appearance: none;
+    
+    /* 크기 및 배경 설정 */
+    width: 30px;
+    height: 30px;
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    margin-right: 10px;
+}
+
+/* 크롬/엣지 브라우저 내부의 네모난 색상 영역을 동그랗게 깎기 */
+.edit-color::-webkit-color-swatch {
+    border: none;
+    border-radius: 50%; /* 여기서 동그라미가 됩니다 */
+    padding: 0;
+}
+.edit-color::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+
+/* 3. 이름 입력창 (평소엔 투명, 클릭하면 흰색) */
+.edit-name {
+    flex-grow: 1;
+    border: 1px solid transparent; 
+    background-color: transparent;
+    font-size: 15px;
+    font-weight: 500;
+    color: #333;
+    padding: 6px 10px;
+    margin-right: 10px;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+/* 마우스 올리거나 입력 중일 때 */
+.edit-name:hover {
+    border: 1px solid #ddd;
+    background-color: #fff;
+}
+.edit-name:focus {
+    border: 1px solid #4CAF50; /* 입력 시 초록 테두리 */
+    background-color: #fff;
+    outline: none;
 }

@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta property="og:title" content="명동 친한약국 근무 스케줄 🗓️">
+    <meta property="og:title" content="에이트약국 근무 스케줄 🗓️">
     
     <meta property="og:description" content="클릭해서 이번 달 근무 일정을 확인하세요.">
-    <title>명동 친한약국 근무 스케줄 관리</title>
+    <title>약국 근무 스케줄 관리</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
     
@@ -153,30 +153,49 @@
             <hr style="margin: 20px 0;">
             <h3>직원 관리</h3>
             <div id="settings-emp-list" class="emp-manage-list"></div>
-            <div class="emp-add-row" style="margin-top:10px;">
+            <div class="emp-add-row" style="margin-top:10px; display: flex; align-items: center;">
     
-    <div id="new-emp-color-div" onclick="openColorModal('new')" style="width:40px; height:40px; background-color:#4a90e2; border-radius:6px; cursor:pointer; border:1px solid #ddd; flex-shrink:0;"></div>
+                <div id="new-emp-color-div" onclick="openColorModal('new')" style="width:40px; height:40px; background-color:#4a90e2; border-radius:6px; cursor:pointer; border:1px solid #ddd; flex-shrink:0;"></div>
+                <input type="hidden" id="new-emp-color" value="#4a90e2">
 
-    <input type="hidden" id="new-emp-color" value="#4a90e2">
+                <input type="text" id="new-emp-name" placeholder="새 직원 이름" style="flex: 1; margin: 0 5px;">
+                
+                <button class="btn-nav" onclick="addEmployee()" style="height: 40px;">추가</button>
 
-    <input type="text" id="new-emp-name" placeholder="새 직원 이름" style="flex: 1;">
-    <button class="btn-nav" onclick="addEmployee()">추가</button>
-            </div>  
-            <button class="btn-save" style="margin-top: 20px;" onclick="saveSettings()">설정 저장하기</button>
-        </div>
-    </div>
-    <div id="color-picker-modal" class="modal">
-        <div class="modal-content" style="max-width: 350px; text-align: center;">
-            <span class="close-btn" onclick="closeColorModal()">&times;</span>
-            <h3>🎨 색상 선택</h3>
-            <p style="font-size:0.9rem; color:#666; margin-bottom:15px;">원하는 색상을 선택하세요</p>
-            
-            <div id="color-palette-grid" style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
+                <button onclick="openRetiredManager()" style="background-color: #607D8B; color: white; border: none; border-radius: 4px; padding: 0 10px; margin-left: 5px; cursor: pointer; height: 40px; font-size: 0.9rem;">
+                    퇴직자 관리
+                </button>
+            </div> 
+                    <button class="btn-save" style="margin-top: 20px;" onclick="saveSettings()">설정 저장하기</button>
                 </div>
+            </div>
+            <div id="color-picker-modal" class="modal">
+                <div class="modal-content" style="max-width: 350px; text-align: center;">
+                    <span class="close-btn" onclick="closeColorModal()">&times;</span>
+                    <h3>🎨 색상 선택</h3>
+                    <p style="font-size:0.9rem; color:#666; margin-bottom:15px;">원하는 색상을 선택하세요</p>
+                    
+                    <div id="color-palette-grid" style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
+                        </div>
+                </div>
+            </div>
+
+            <div id="retired-manager-modal" class="modal">
+    <div class="modal-content" style="max-width: 500px;">
+        <span class="close-btn" onclick="closeRetiredManager()">&times;</span>
+        <h2 style="margin-bottom: 20px;">🗑️ 퇴직자 관리</h2>
+        
+        <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+            <p style="font-size: 14px; color: #666; margin: 0; line-height: 1.6;">
+                • <b>복귀:</b> 직원을 다시 근무자 명단으로 되돌립니다.<br>
+                • <b>영구 삭제:</b> 데이터를 완전히 지웁니다. (복구 불가 ⚠️)
+            </p>
+        </div>
+
+        <div id="retired-list-container" style="max-height: 400px; overflow-y: auto;">
+            </div>
         </div>
     </div>
     <script src="script.js"></script>
 </body>
 </html>
-
-
