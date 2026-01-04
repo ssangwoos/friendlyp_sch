@@ -14,7 +14,6 @@ const firebaseConfig = {
 
 
 
-
 // --- 파이어베이스 초기화 ---
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
@@ -106,24 +105,72 @@ function initTimeOptions() {
     });
 }
 
+// script.js 의 renderEmployees 함수를 이걸로 통째로 교체하세요!
+
 function renderEmployees() {
-    employeeListEl.innerHTML = "";
-    const modalSelect = document.getElementById('modal-emp-select');
-    modalSelect.innerHTML = '<option value="">선택하세요</option>';
+    // -----------------------------------------------------------
+    // 1. [메인] 오른쪽 사이드바 초기화
+    // -----------------------------------------------------------
+    const sidebarList = document.getElementById('employee-list');
+    if (sidebarList) sidebarList.innerHTML = "";
     
-    employees.forEach(emp => {
-        const li = document.createElement('li');
-        li.className = 'employee-item';
-        li.textContent = emp.name;
-        li.style.backgroundColor = emp.color;
-        li.onclick = () => {
-            if (activeEmployeeId === emp.id) { activeEmployeeId = null; resetHighlights(); }
-            else { activeEmployeeId = emp.id; highlightEmployee(emp.id); }
-        };
-        employeeListEl.appendChild(li);
-        const opt = document.createElement('option');
-        opt.value = emp.id; opt.textContent = emp.name;
-        modalSelect.appendChild(opt);
+    // -----------------------------------------------------------
+    // 2. [근무추가 모달] 직원 선택 박스 초기화
+    // -----------------------------------------------------------
+    const modalSelect = document.getElementById('modal-emp-select');
+    if (modalSelect) modalSelect.innerHTML = '<option value="">선택하세요</option>';
+
+    // -----------------------------------------------------------
+    // 3. [환경설정 모달] 관리 목록 초기화 (★ 여기가 중요!)
+    // -----------------------------------------------------------
+    const settingsList = document.getElementById('settings-emp-list');
+    if (settingsList) settingsList.innerHTML = "";
+
+    // -----------------------------------------------------------
+    // ★ 직원 목록 루프 (퇴직자 제외하고 그리기)
+    // -----------------------------------------------------------
+    employees.filter(emp => !emp.isDeleted).forEach(emp => {
+        
+        // (1) 사이드바에 추가 (메인 화면)
+        if (sidebarList) {
+            const li = document.createElement('li');
+            li.className = 'employee-item';
+            li.textContent = emp.name;
+            li.style.backgroundColor = emp.color;
+            li.onclick = () => {
+                if (typeof activeEmployeeId !== 'undefined' && activeEmployeeId === emp.id) { 
+                    activeEmployeeId = null; 
+                    if(typeof resetHighlights === 'function') resetHighlights(); 
+                } else { 
+                    activeEmployeeId = emp.id; 
+                    if(typeof highlightEmployee === 'function') highlightEmployee(emp.id); 
+                }
+            };
+            sidebarList.appendChild(li);
+        }
+
+        // (2) 근무 추가 팝업에 추가 (선택지)
+        if (modalSelect) {
+            const opt = document.createElement('option');
+            opt.value = emp.id; 
+            opt.textContent = emp.name;
+            modalSelect.appendChild(opt);
+        }
+
+        // (3) 환경설정 목록에 추가 (★ 퇴직 버튼 생성)
+        if (settingsList) {
+            const div = document.createElement('div');
+            div.style.cssText = 'display:flex; align-items:center; margin-bottom:10px;';
+            div.innerHTML = `
+                <div style="width:30px; height:30px; background-color:${emp.color}; border-radius:50%; margin-right:10px;"></div>
+                <span style="flex:1; font-weight:bold;">${emp.name}</span>
+                
+                <button onclick="retireEmployee('${emp.id}')" style="background-color:#FF9800; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer;">
+                    퇴직
+                </button>
+            `;
+            settingsList.appendChild(div);
+        }
     });
 }
 
@@ -226,36 +273,85 @@ function toggleHoliday(dateStr) {
 // 모달 및 DB 저장 로직 (기존 동일)
 // ---------------------------
 function openAddModal(dateStr) {
-    editingScheduleId = null; selectedDate = dateStr;
+    editingScheduleId = null; 
+    selectedDate = dateStr;
+    
     document.getElementById('modal-title').innerText = `${dateStr} 근무 추가`;
     document.getElementById('modal-date-display').value = dateStr;
+    
+    // ----------------------------------------------------
+    // 👇 [추가] 직원 목록을 새로 만들면서 '삭제된 사람'은 뺍니다.
+    // ----------------------------------------------------
+    const select = document.getElementById('modal-emp-select');
+    select.innerHTML = ""; // 기존 목록 비우기
+    
+    // 삭제 안 된 사람(!isDeleted)만 골라서 목록에 넣기
+    employees.filter(emp => !emp.isDeleted).forEach(emp => {
+        const option = document.createElement('option');
+        option.value = emp.id;
+        option.innerText = emp.name;
+        select.appendChild(option);
+    });
+    // ----------------------------------------------------
+
     document.getElementById('modal-emp-select').value = ""; 
     document.getElementById('modal-shift-type').value = "주간";
     document.getElementById('modal-memo').value = ""; 
     document.getElementById('repeat-check').checked = false; 
     document.getElementById('repeat-section').style.display = "flex";
     document.getElementById('btn-delete').style.display = "none";
-    document.getElementById('start-hour').value = "09"; document.getElementById('start-min').value = "00";
-    document.getElementById('end-hour').value = "18"; document.getElementById('end-min').value = "00";
+    
+    document.getElementById('start-hour').value = "09"; 
+    document.getElementById('start-min').value = "00";
+    document.getElementById('end-hour').value = "18"; 
+    document.getElementById('end-min').value = "00";
     document.getElementById('end-date').value = dateStr;
-    toggleInputs(); shiftModal.style.display = 'block';
+    
+    toggleInputs(); 
+    shiftModal.style.display = 'block';
 }
 function openEditModal(sch) {
-    editingScheduleId = sch.id; selectedDate = sch.date;
+    editingScheduleId = sch.id; 
+    selectedDate = sch.date;
+    
     document.getElementById('modal-title').innerText = `${sch.date} 근무 수정`;
     document.getElementById('modal-date-display').value = sch.date;
     document.getElementById('btn-delete').style.display = "flex"; 
     document.getElementById('repeat-section').style.display = "none";
+
+    // ----------------------------------------------------
+    // 👇 [추가] 여기서도 직원 목록을 최신화 (삭제된 사람 제외)
+    // ----------------------------------------------------
+    const select = document.getElementById('modal-emp-select');
+    select.innerHTML = ""; 
+    
+    employees.filter(emp => !emp.isDeleted).forEach(emp => {
+        const option = document.createElement('option');
+        option.value = emp.id;
+        option.innerText = emp.name;
+        select.appendChild(option);
+    });
+    // ----------------------------------------------------
+
     document.getElementById('modal-emp-select').value = sch.empId;
     document.getElementById('modal-shift-type').value = sch.type;
     document.getElementById('modal-memo').value = sch.memo || ""; 
+    
     toggleInputs();
+    
     if(sch.type !== '휴가' && sch.type !== '휴무') {
-        const [sh, sm] = sch.startTime.split(':'); const [eh, em] = sch.endTime.split(':');
-        document.getElementById('start-hour').value = sh; document.getElementById('start-min').value = sm;
-        document.getElementById('end-hour').value = eh; document.getElementById('end-min').value = em;
+        const [sh, sm] = sch.startTime.split(':'); 
+        const [eh, em] = sch.endTime.split(':');
+        document.getElementById('start-hour').value = sh; 
+        document.getElementById('start-min').value = sm;
+        document.getElementById('end-hour').value = eh; 
+        document.getElementById('end-min').value = em;
     }
-    if(sch.type === '휴가') { document.getElementById('end-date').value = sch.date; }
+    
+    if(sch.type === '휴가') { 
+        document.getElementById('end-date').value = sch.date; 
+    }
+    
     shiftModal.style.display = 'block';
 }
 function closeModal() { shiftModal.style.display = 'none'; }
@@ -321,35 +417,36 @@ function checkPassword() {
 // script.js 의 openSettingModal 함수를 이걸로 덮어쓰세요!
 
 function openSettingModal() {
-    const pw = prompt("관리자 비밀번호를 입력하세요:");
-    if (pw === null) return; // 취소 누르면 종료
-
-    if (pw == config.password) {
+    // 1. 비밀번호 확인 (기존 코드 유지)
+    // (config 변수가 없으면 오류 날 수 있으니, 안전하게 기존 변수명도 체크합니다)
+    const currentPw = (typeof config !== 'undefined' && config.password) ? config.password : adminPassword; 
+    const enteredPw = prompt("관리자 비밀번호를 입력하세요:");
+    
+    if (enteredPw === null) return; // 취소
+    
+    if (enteredPw == currentPw) {
         
-        // 1. HTML에 적힌 ID ('set-pharmacy-name')를 정확히 찾아서 채우기
+        // 2. 입력칸 채우기
         const nameInput = document.getElementById('set-pharmacy-name');
-        if (nameInput) {
-            nameInput.value = config.pharmacyName;
-        }
-
-        // 2. 비번 입력칸 ('set-admin-pw') 채우기
         const pwInput = document.getElementById('set-admin-pw');
-        if (pwInput) {
-            pwInput.value = config.password;
-        }
-        
-        // 👇 [추가] 잠금 설정 상태 불러오기
         const lockCheck = document.getElementById('set-lock-past');
-        if (lockCheck) {
-            // config.lockPast가 true면 체크됨, 없거나 false면 해제
-            lockCheck.checked = config.lockPast === true;
-        }
-        // 3. 직원 목록 최신화
-        if (typeof renderSettingsEmployees === 'function') {
-            renderSettingsEmployees(); 
-        }
 
-        // 4. 창 열기
+        // (config 혹은 전역 변수값 사용)
+        const currentName = (typeof config !== 'undefined' && config.pharmacyName) ? config.pharmacyName : pharmacyName;
+        const currentLock = (typeof config !== 'undefined' && config.lockPast) ? config.lockPast : (typeof isPastEditLocked !== 'undefined' ? isPastEditLocked : false);
+
+        if (nameInput) nameInput.value = currentName;
+        if (pwInput) pwInput.value = currentPw;
+        if (lockCheck) lockCheck.checked = currentLock === true;
+
+        // -----------------------------------------------------------
+        // ★ [핵심 수정] 여기가 범인이었습니다!
+        // 옛날 함수(renderSettingsEmployees) 대신, 
+        // 우리가 만든 최신 함수(renderEmployees)를 불러야 '퇴직' 버튼이 나옵니다.
+        // -----------------------------------------------------------
+        renderEmployees(); 
+
+        // 3. 모달창 열기
         document.getElementById('settings-modal').style.display = 'block';
 
     } else {
@@ -357,34 +454,88 @@ function openSettingModal() {
     }
 }
 function closeSettingsModal() { settingsModal.style.display = 'none'; }
+// 2. 환경설정 직원 목록 그리기 (수정됨: 삭제된 사람 숨김)
+// script.js 의 renderSettingsEmployees 함수를 이걸로 교체하세요!
+
+// script.js 의 renderSettingsEmployees 함수를 이걸로 교체하세요!
+// (CSS는 건드리지 않아도 됩니다. JS가 CSS에 맞춰줍니다.)
+
+// script.js 의 renderSettingsEmployees 함수를 이걸로 교체하세요!
 function renderSettingsEmployees() {
-    const listDiv = document.getElementById('settings-emp-list'); 
+    const listDiv = document.getElementById('settings-emp-list');
+    if (!listDiv) return;
+
+    listDiv.className = 'emp-manage-list'; 
     listDiv.innerHTML = "";
-    
-    employees.forEach((emp) => {
-        const div = document.createElement('div'); 
-        div.className = 'emp-manage-item';
-        // ★ input type="color" 대신 div로 만들고 클릭 시 모달 열기
+
+    // 삭제 안 된 사람만 필터링
+    const activeEmployees = employees.filter(emp => !emp.isDeleted);
+
+    activeEmployees.forEach(emp => {
+        const div = document.createElement('div');
+        div.className = 'emp-manage-item'; 
+
         div.innerHTML = `
-            <div onclick="openColorModal('${emp.id}', 'edit')" style="width:40px; height:40px; background-color:${emp.color}; border-radius:6px; cursor:pointer; border:1px solid #ddd; flex-shrink:0;"></div>
-            <input type="text" value="${emp.name}" onchange="updateEmpName('${emp.id}', this.value)" style="flex:1; margin:0 10px;">
-            <button class="btn-sm-del" onclick="deleteEmployee('${emp.id}')">삭제</button>
+            <input type="color" value="${emp.color}" 
+                   onchange="updateEmpColor('${emp.id}', this.value)">
+            
+            <input type="text" value="${emp.name}" 
+                   style="border:none; background:transparent; font-size:15px; flex:1; padding:5px;"
+                   onfocus="this.style.background='#fff'; this.style.border='1px solid #ddd';"
+                   onblur="this.style.background='transparent'; this.style.border='none';"
+                   onchange="updateEmpName('${emp.id}', this.value)">
+            
+            <button class="btn-sm-del" style="background-color: #FF9800;" onclick="retireEmployee('${emp.id}')">퇴직</button>
         `;
         listDiv.appendChild(div);
     });
 }
-function updateEmpColor(id, color) { db.collection('employees').doc(id).update({ color }); }
-// script.js 의 updateEmpColor 함수 밑에 추가하세요.
-
-function updateEmpName(docId, newName) {
-    if(!newName.trim()) {
+// 2. 색상 수정 저장
+function updateEmpColor(id, newColor) {
+    db.collection('employees').doc(id).update({
+        color: newColor
+    }).then(() => {
+        // 색상 바뀌었으니 달력과 사이드바도 갱신
+        renderCalendar();
+        renderEmployees();
+    });
+}
+// 1. 이름 수정 저장
+function updateEmpName(id, newName) {
+    if (!newName.trim()) {
         alert("이름을 비워둘 수 없습니다.");
-        renderSettingsEmployees(); // 원래대로 되돌림
+        renderSettingsEmployees(); // 원래 이름으로 복구
         return;
     }
-    db.collection('employees').doc(docId).update({ name: newName });
+    // DB 업데이트
+    db.collection('employees').doc(id).update({
+        name: newName.trim()
+    }).then(() => {
+        // 이름 바뀌었으니 달력과 사이드바도 갱신
+        renderCalendar();
+        renderEmployees(); 
+    });
 }
-function deleteEmployee(id) { if(confirm("삭제?")) db.collection('employees').doc(id).delete(); }
+// 1. 직원 삭제 함수 (수정됨: 실제 삭제 -> 숨김 처리)
+// script.js 의 deleteEmployee 함수
+
+function deleteEmployee(id) {
+    if (confirm("목록에서 삭제하시겠습니까? (과거 근무 기록은 유지됩니다)")) {
+        
+        // 1. DB에 '삭제됨' 표시
+        db.collection('employees').doc(id).update({
+            isDeleted: true
+        }).then(() => {
+            alert("목록에서 삭제되었습니다.");
+            
+            // 2. ★ 핵심: 사이트를 새로고침해서 최신 데이터(삭제된 상태)를 가져옴
+            location.reload(); 
+
+        }).catch((error) => {
+            alert("오류 발생: " + error.message);
+        });
+    }
+}
 function addEmployee() {
     const name = document.getElementById('new-emp-name').value.trim();
     if(!name) return alert("이름 입력!");
@@ -432,23 +583,83 @@ function saveSettings() {
     });
 }
 function openStatsModal() {
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
-    
-    document.getElementById('stats-period').innerText = `${year}년 ${month + 1}월 통계`;
-    
+    const targetYear = currentDate.getFullYear();
+    const targetMonth = currentDate.getMonth() + 1; // 1~12월
+
+    // 제목 설정
+    document.getElementById('stats-period').innerText = `${targetYear}년 ${targetMonth}월 통계`;
+
+    // --------------------------------------------------------------------
+    // 🕵️‍♂️ [1단계] 이번 달 스케줄 장부를 털어서 "일한 사람" 명단 확보
+    // --------------------------------------------------------------------
+    const workedEmpIds = new Set(); // 일한 사람 ID 저장소
+
+    if (Array.isArray(schedules)) {
+        schedules.forEach(item => {
+            // 날짜 확인 (item.date = "2026-07-29")
+            if (item && item.date) {
+                const dateParts = item.date.split('-'); 
+                
+                if (dateParts.length >= 2) {
+                    const itemYear = parseInt(dateParts[0], 10);
+                    const itemMonth = parseInt(dateParts[1], 10);
+
+                    // 이번 달 기록이면 명단에 추가
+                    if (itemYear === targetYear && itemMonth === targetMonth) {
+                        if (item.empId) {
+                            workedEmpIds.add(String(item.empId).trim());
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // --------------------------------------------------------------------
+    // 📝 [2단계] 직원 목록 생성 (재직자 + 일한 퇴직자)
+    // --------------------------------------------------------------------
     const select = document.getElementById('stats-emp-select');
     select.innerHTML = '<option value="">-- 직원을 선택해주세요 --</option>';
+
+    let count = 0;
     employees.forEach(emp => {
-        const opt = document.createElement('option');
-        opt.value = emp.id;
-        opt.textContent = emp.name;
-        select.appendChild(opt);
+        const empIdStr = String(emp.id).trim();
+
+        // ★ 핵심 로직: (재직 중인가?) OR (이번 달에 일했는가?)
+        // 둘 중 하나라도 YES면 목록에 띄움
+        if (!emp.isDeleted || workedEmpIds.has(empIdStr)) {
+            
+            const opt = document.createElement('option');
+            opt.value = emp.id;
+            
+            // 퇴직자일 경우에만 (퇴직) 꼬리표 붙임
+            if (emp.isDeleted) {
+                opt.textContent = `${emp.name} (퇴직)`;
+                opt.style.color = "#999"; // 약간 흐리게
+            } else {
+                opt.textContent = emp.name;
+            }
+            select.appendChild(opt);
+            count++;
+        }
     });
 
-    document.getElementById('stats-body').innerHTML = '<tr><td colspan="7" style="text-align:center; padding:30px;">직원을 선택하면 상세 리포트가 표시됩니다.</td></tr>';
-    document.getElementById('stats-report-summary').style.display = 'none';
+    // (혹시 목록이 텅 비었을 때 안내)
+    if (count === 0) {
+        const opt = document.createElement('option');
+        opt.disabled = true;
+        opt.textContent = "표시할 직원이 없습니다";
+        select.appendChild(opt);
+    }
 
+    // 결과창 초기화
+    if(document.getElementById('stats-body')) {
+        document.getElementById('stats-body').innerHTML = '<tr><td colspan="7" style="text-align:center; padding:30px;">직원을 선택하면 상세 리포트가 표시됩니다.</td></tr>';
+    }
+    if(document.getElementById('stats-report-summary')) {
+        document.getElementById('stats-report-summary').style.display = 'none';
+    }
+    
     statsModal.style.display = 'block';
 }
 
@@ -668,6 +879,119 @@ function loadConfig() {
         document.getElementById('main-title').innerText = config.pharmacyName + " 근무 스케줄 🗓️";
         renderCalendar(); 
     });
+}
+
+/* ============================================================
+   🗑️ 퇴직자 관리 시스템 (복귀 & 영구삭제) - 최종 완성본
+   ============================================================ */
+/* ============================================================
+   🗑️ 퇴직자 관리 시스템 (최종_수정버전)
+   ============================================================ */
+// ============================================================
+// 🗑️ 퇴직자 관리 시스템 (DB 직접 연동 최종본)
+// ============================================================
+
+// 1. [핵심] 퇴직자 목록 그리기
+function renderRetiredEmployees() {
+    const listContainer = document.getElementById('retired-list-container');
+    if (!listContainer) return;
+
+    listContainer.innerHTML = ''; 
+
+    // 삭제된 사람만 필터링
+    const retiredEmps = employees.filter(e => e.isDeleted);
+
+    if (retiredEmps.length === 0) {
+        listContainer.innerHTML = '<div style="text-align:center; padding:30px; color:#999;">현재 퇴직 처리된 직원이 없습니다.</div>';
+    } else {
+        retiredEmps.forEach(emp => {
+            const div = document.createElement('div');
+            div.style.cssText = "display:flex; justify-content:space-between; align-items:center; background:white; border:1px solid #ddd; padding:10px; margin-bottom:8px; border-radius:6px;";
+            
+            div.innerHTML = `
+                <div style="display:flex; align-items:center;">
+                    <div style="width:24px; height:24px; background-color:${emp.color}; border-radius:50%; margin-right:10px;"></div>
+                    <span style="font-weight:bold; color:#555;">${emp.name}</span>
+                    <span style="font-size:12px; color:#999; margin-left:5px;">(퇴사일: ${emp.outDate || '-'})</span>
+                </div>
+                <div style="display:flex; gap:5px;">
+                    <button onclick="restoreEmployee('${emp.id}')" style="background:#4CAF50; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:13px;">복귀</button>
+                    <button onclick="permanentDeleteEmployee('${emp.id}')" style="background:#FF5252; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:13px;">영구삭제</button>
+                </div>
+            `;
+            listContainer.appendChild(div);
+        });
+    }
+}
+
+// 2. 모달 열기
+function openRetiredManager() {
+    const modal = document.getElementById('retired-manager-modal');
+    if (!modal) {
+        alert("퇴직자 관리 모달(HTML)이 없습니다.");
+        return;
+    }
+    renderRetiredEmployees(); 
+    modal.style.display = 'block'; 
+}
+
+// 3. 모달 닫기
+function closeRetiredManager() {
+    document.getElementById('retired-manager-modal').style.display = 'none';
+    // 설정창 목록도 갱신
+    if (typeof renderSettingsEmployees === 'function') renderSettingsEmployees(); 
+}
+
+// 4. ★ [수정됨] 퇴직 처리 (소프트 삭제)
+function retireEmployee(id) {
+    if (confirm("해당 직원을 퇴직 처리하시겠습니까?\n(데이터는 보존되며 [퇴직자 관리]에서 복구 가능합니다.)")) {
+        
+        // 오늘 날짜 구하기 (YYYY-MM-DD)
+        const today = new Date().toISOString().split('T')[0];
+
+        // DB 업데이트: isDeleted를 true로 변경
+        db.collection('employees').doc(id).update({
+            isDeleted: true,
+            outDate: today
+        }).then(() => {
+            alert("퇴직 처리되었습니다.");
+            // 화면 갱신은 onSnapshot이 알아서 하므로 여기선 안 해도 됨
+        }).catch((error) => {
+            alert("오류 발생: " + error.message);
+        });
+    }
+}
+
+// 5. ★ [수정됨] 복귀 기능 (DB 업데이트)
+function restoreEmployee(id) {
+    if (confirm('이 직원을 다시 근무자 명단으로 복귀시키겠습니까?')) {
+        
+        // DB 업데이트: isDeleted를 false로 변경하고, 퇴사일 삭제
+        db.collection('employees').doc(id).update({
+            isDeleted: false,
+            outDate: firebase.firestore.FieldValue.delete() // DB에서 필드 삭제
+        }).then(() => {
+            alert("복귀되었습니다.");
+            renderRetiredEmployees(); // 퇴직자 목록 다시 그리기
+        }).catch((error) => {
+            alert("오류: " + error.message);
+        });
+    }
+}
+
+// 6. ★ [수정됨] 영구 삭제 (DB 데이터 삭제)
+function permanentDeleteEmployee(id) {
+    if (confirm('⚠️ 경고: 정말로 영구 삭제하시겠습니까?\n\n삭제 후에는 절대 복구할 수 없습니다.')) {
+        
+        // DB 삭제: 해당 문서 자체를 날려버림
+        db.collection('employees').doc(id).delete()
+        .then(() => {
+            alert("영구 삭제되었습니다.");
+            renderRetiredEmployees(); // 퇴직자 목록 다시 그리기
+        }).catch((error) => {
+            alert("삭제 실패: " + error.message);
+        });
+    }
 }
 // ★ 앱 시작 시 실행
 loadConfig();
